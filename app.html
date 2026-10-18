@@ -230,17 +230,17 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
   // ---------- tricks ----------
   const TRICKS = {
     1: ['Anything times 1 stays the same.', n => `1 × ${n} = ${n}`],
-    2: ['Just double the other number.', n => `2 × ${n}: ${n} + ${n} = ${2 * n}`],
-    3: ['Double it, then add one more.', n => `3 × ${n}: ${2 * n} + ${n} = ${3 * n}`],
-    4: ['Double, then double again.', n => `4 × ${n}: ${n} → ${2 * n} → ${4 * n}`],
-    5: ['Times 10, then cut in half.', n => `5 × ${n}: ${10 * n} ÷ 2 = ${5 * n}`],
-    6: ['Times 5, then add one more.', n => `6 × ${n}: ${5 * n} + ${n} = ${6 * n}`],
-    7: ['Times 5 plus times 2.', n => `7 × ${n}: ${5 * n} + ${2 * n} = ${7 * n}`],
-    8: ['Double three times.', n => `8 × ${n}: ${n} → ${2 * n} → ${4 * n} → ${8 * n}`],
-    9: ['Times 10, then take one away.', n => `9 × ${n}: ${10 * n} − ${n} = ${9 * n}`],
+    2: ['Just double the other number.', n => `2 × ${n} is the same as ${n} + ${n} = ${2 * n}`],
+    3: ['Double it, then add one more.', n => `3 × ${n} is the same as 2 × ${n} + ${n} = ${2 * n} + ${n} = ${3 * n}`],
+    4: ['Double, then double again.', n => `4 × ${n} is the same as ${n} doubled twice → ${2 * n} → ${4 * n}`],
+    5: ['Times 10, then cut in half.', n => `5 × ${n} is the same as half of 10 × ${n} = half of ${10 * n} = ${5 * n}`],
+    6: ['Times 5, then add one more.', n => `6 × ${n} is the same as 5 × ${n} + ${n} = ${5 * n} + ${n} = ${6 * n}`],
+    7: ['Times 5 plus times 2.', n => `7 × ${n} is the same as 5 × ${n} + 2 × ${n} = ${5 * n} + ${2 * n} = ${7 * n}`],
+    8: ['Double three times.', n => `8 × ${n} is the same as ${n} doubled three times → ${2 * n} → ${4 * n} → ${8 * n}`],
+    9: ['Times 10, then take one away.', n => `9 × ${n} is the same as 10 × ${n} − ${n} = ${10 * n} − ${n} = ${9 * n}`],
     10: ['Stick a zero on the end.', n => `10 × ${n} = ${10 * n}`],
-    11: ['Up to 9, repeat the digit. After that, times 10 plus one more.', n => n <= 9 ? `11 × ${n} = ${n}${n}` : `11 × ${n}: ${10 * n} + ${n} = ${11 * n}`],
-    12: ['Times 10 plus times 2.', n => `12 × ${n}: ${10 * n} + ${2 * n} = ${12 * n}`],
+    11: ['Up to 9, write the digit twice. After that, times 10 plus one more.', n => n <= 9 ? `11 × ${n} = ${n}${n}, just write ${n} twice` : `11 × ${n} is the same as 10 × ${n} + ${n} = ${10 * n} + ${n} = ${11 * n}`],
+    12: ['Times 10 plus times 2.', n => `12 × ${n} is the same as 10 × ${n} + 2 × ${n} = ${10 * n} + ${2 * n} = ${12 * n}`],
   };
   const EASY = [1, 10, 2, 5, 11, 9, 4, 3, 12, 6, 8, 7];
   function hintFor(a, b) {
@@ -455,7 +455,7 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
 
   function tricks() {
     stop(); G = null;
-    app.innerHTML = bar('Tricks', true) + `<p class="note">Stuck on a fact? Use the easiest table in it. For 7 × 9, use the 9s trick: 70 − 7 = 63.</p>
+    app.innerHTML = bar('Tricks', true) + `<p class="note">Stuck on a fact? Use the easiest table in it. 7 × 9 is the same as 9 × 7, so use the 9s trick. 9 × 7 is the same as 70 − 7 = 63.</p>
       <div class="tricks">${Object.keys(TRICKS).map(n => `<div class="trick"><div class="n">×${n}</div><b>${TRICKS[n][0]}</b><span>${esc(TRICKS[n][1](n == 11 ? 4 : 7))}</span></div>`).join('')}
       <div class="trick"><div class="n">a×b</div><b>Flip it.</b><span>3 × 8 is the same as 8 × 3. Learn one, get both free.</span></div></div>`;
   }

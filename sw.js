@@ -1,4 +1,4 @@
-const CACHE = 'tt-dojo-v1';
+const CACHE = 'tt-dojo-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
