@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Russo+One&family=Rubik:wght@400;500;700&display=swap">
 <style>
 /* Layout: one narrow column app (max 560px), sticky top bar, big thumb-sized number pad on the play screen. */
 :root {
@@ -24,7 +24,7 @@
   --on-pop: #2A1E00;
   --good: #16955A;
   --bad: #E0464B;
-  --display: "Bungee", "Arial Black", Impact, system-ui, sans-serif;
+  --display: "Bungee", "Russo One", "Arial Black", Impact, system-ui, sans-serif;
   --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r: 14px;
 }
@@ -158,6 +158,11 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
 .row .danger { background: var(--bad); color: #fff; }
 .note { color: var(--muted); font-size: 14px; }
 
+.langs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.lang { height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 14px; font-weight: 500; }
+.lang.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.row { flex-wrap: wrap; }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -170,25 +175,172 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
   const BLITZ_SECS = 60;
   const FAST_MS = 6000;
   const BELTS = [
-    { name: 'White belt', need: 0, color: '#F4F4F0' },
-    { name: 'Yellow belt', need: 8, color: '#FFD23F' },
-    { name: 'Orange belt', need: 18, color: '#FF8C2B' },
-    { name: 'Green belt', need: 30, color: '#2FB45A' },
-    { name: 'Blue belt', need: 42, color: '#2D6BFF' },
-    { name: 'Purple belt', need: 54, color: '#8A4DFF' },
-    { name: 'Brown belt', need: 66, color: '#8B5A2B' },
-    { name: 'Black belt', need: 78, color: '#15151A' },
+    { need: 0, color: '#F4F4F0' },
+    { need: 8, color: '#FFD23F' },
+    { need: 18, color: '#FF8C2B' },
+    { need: 30, color: '#2FB45A' },
+    { need: 42, color: '#2D6BFF' },
+    { need: 54, color: '#8A4DFF' },
+    { need: 66, color: '#8B5A2B' },
+    { need: 78, color: '#15151A' },
   ];
   const TOTAL_FACTS = 78; // unique pairs from 1x1 to 12x12
 
+  // ---------- languages ----------
+  const ruPl = (n, one, few, many) => { const a = n % 10, b = n % 100; return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many; };
+  const LANGS = { en: 'English', es: 'Español', ca: 'Català', ru: 'Русский' };
+  // belts: [name, form used after "to"]; rules: one per table; double/half: words used in the step columns.
+  const I18N = {
+    en: {
+      title: 'Times Table <span>Dojo</span>',
+      belts: [['White belt', 'white belt'], ['Yellow belt', 'yellow belt'], ['Orange belt', 'orange belt'], ['Green belt', 'green belt'], ['Blue belt', 'blue belt'], ['Purple belt', 'purple belt'], ['Brown belt', 'brown belt'], ['Black belt', 'black belt']],
+      moreTo: (n, to) => `${n} more ${n === 1 ? 'fact' : 'facts'} to ${to}`,
+      allDone: 'Every fact mastered. Legend.',
+      earned: name => `You earned your ${name}!`,
+      masteredN: n => `${n} ${n === 1 ? 'fact' : 'facts'} mastered.`,
+      statMastered: 'Mastered', statStreak: 'Day streak', statBest: 'Blitz best',
+      pickTables: 'Pick your tables', selected: n => `${n} selected`, noneSelected: 'none selected', pickOne: 'Pick at least one table',
+      practice: 'Practice', practiceSub: n => `${n} questions with hints`,
+      blitz: 'Blitz', blitzSub: n => `${n} seconds. Go fast.`,
+      smart: 'Smart mix', smartSub: 'Picks the facts you find hardest, from every table',
+      map: 'Mastery map', tapSquare: 'Tap a square',
+      legend: ['Not tried', 'Tricky', 'Learning', 'Mastered'],
+      peekIntro: 'Each square is one fact. Answer it right and fast a few times and it turns green.',
+      status: ['not tried yet', 'tricky', 'learning', 'mastered'],
+      rightOf: (r, n) => `${r}/${n} right`,
+      times: 'times', sec: 's',
+      correctSoFar: n => `<b>${n}</b> correct so far`,
+      nice: 'Nice!', answer: 'The answer', trick: 'Trick', gotIt: 'Got it, next', check: 'Check', del: 'Delete', back: 'Back',
+      newBest: 'New personal best!', bestSoFar: n => `Best so far: ${n}`,
+      perfect: 'Perfect round.', strong: 'Strong round.', goodWork: 'Good work. The tricky ones will come back until they stick.',
+      roundDone: 'Round done', correctIn: n => `Correct in ${n} seconds`, correct: 'Correct',
+      newMastered: n => `+${n} new ${n === 1 ? 'fact' : 'facts'} mastered`,
+      practiceThese: 'Practice these', again: 'Play again', home: 'Back to dojo',
+      tricks: 'Tricks', tricksNote: 'Stuck on a fact? Use the easiest table in it. For 7 × 9, flip it to 9 × 7 and use the 9s trick.',
+      flip: 'Flip it.', flipSub: '3 × 8 is the same as 8 × 3. Learn one, get both free.',
+      settings: 'Settings', sounds: 'Sounds', on: 'On', off: 'Off', language: 'Language',
+      reset: 'Reset all progress', resetNote: 'Clears the mastery map, streak and best score on this device.', resetBtn: 'Reset', tapAgain: 'Tap again to reset',
+      savedNote: 'Progress is saved on this device. Add the app to your home screen to use it offline.',
+      double: 'double', half: 'half of',
+      rules: { 1: 'Anything times 1 stays the same.', 2: 'Just double the other number.', 3: 'Double it, then add one more.', 4: 'Double, then double again.', 5: 'Times 10, then cut in half.', 6: 'Times 5, then add one more.', 7: 'Times 5 plus times 2.', 8: 'Double three times.', 9: 'Times 10, then take one away.', 10: 'Stick a zero on the end.', 11: 'Up to 9, write the digit twice. After that, times 10 plus one more.', 12: 'Times 10 plus times 2.' },
+    },
+    es: {
+      title: 'Tablas <span>Dojo</span>',
+      belts: [['Cinturón blanco', 'el cinturón blanco'], ['Cinturón amarillo', 'el cinturón amarillo'], ['Cinturón naranja', 'el cinturón naranja'], ['Cinturón verde', 'el cinturón verde'], ['Cinturón azul', 'el cinturón azul'], ['Cinturón morado', 'el cinturón morado'], ['Cinturón marrón', 'el cinturón marrón'], ['Cinturón negro', 'el cinturón negro']],
+      moreTo: (n, to) => `${n === 1 ? 'Te falta 1' : `Te faltan ${n}`} para ${to}`,
+      allDone: 'Todas dominadas. ¡Eres una leyenda!',
+      earned: (name, to) => `¡Has ganado ${to}!`,
+      masteredN: n => `${n} ${n === 1 ? 'dominada' : 'dominadas'}.`,
+      statMastered: 'Dominadas', statStreak: 'Días seguidos', statBest: 'Récord blitz',
+      pickTables: 'Elige tus tablas', selected: n => `${n} ${n === 1 ? 'elegida' : 'elegidas'}`, noneSelected: 'ninguna elegida', pickOne: 'Elige al menos una tabla',
+      practice: 'Práctica', practiceSub: n => `${n} preguntas con pistas`,
+      blitz: 'Blitz', blitzSub: n => `${n} segundos. ¡Rápido!`,
+      smart: 'Mezcla inteligente', smartSub: 'Las que más te cuestan, de todas las tablas',
+      map: 'Mapa de progreso', tapSquare: 'Toca un cuadro',
+      legend: ['Sin probar', 'Difícil', 'Aprendiendo', 'Dominada'],
+      peekIntro: 'Cada cuadro es una multiplicación. Acierta rápido unas cuantas veces y se pondrá verde.',
+      status: ['sin probar', 'difícil', 'aprendiendo', 'dominada'],
+      rightOf: (r, n) => `${r}/${n} bien`,
+      times: 'por', sec: 's',
+      correctSoFar: n => `<b>${n}</b> ${n === 1 ? 'acierto' : 'aciertos'}`,
+      nice: '¡Bien!', answer: 'La respuesta', trick: 'Truco', gotIt: 'Entendido, siguiente', check: 'Comprobar', del: 'Borrar', back: 'Atrás',
+      newBest: '¡Nuevo récord!', bestSoFar: n => `Tu récord es ${n}`,
+      perfect: '¡Ronda perfecta!', strong: '¡Muy bien!', goodWork: 'Buen trabajo. Las difíciles volverán hasta que te las sepas.',
+      roundDone: 'Ronda terminada', correctIn: n => `Aciertos en ${n} segundos`, correct: 'Aciertos',
+      newMastered: n => `+${n} ${n === 1 ? 'nueva dominada' : 'nuevas dominadas'}`,
+      practiceThese: 'Repasa estas', again: 'Jugar otra vez', home: 'Volver al dojo',
+      tricks: 'Trucos', tricksNote: '¿Te atascas? Usa la tabla más fácil. Para 7 × 9, dale la vuelta a 9 × 7 y usa el truco del 9.',
+      flip: 'Dale la vuelta.', flipSub: '3 × 8 es lo mismo que 8 × 3. Aprende una y te sabes las dos.',
+      settings: 'Ajustes', sounds: 'Sonidos', on: 'Sí', off: 'No', language: 'Idioma',
+      reset: 'Borrar todo el progreso', resetNote: 'Borra el mapa, la racha y el récord en este dispositivo.', resetBtn: 'Borrar', tapAgain: 'Toca otra vez para borrar',
+      savedNote: 'El progreso se guarda en este dispositivo. Añade la app a la pantalla de inicio para usarla sin conexión.',
+      double: 'doble de', half: 'mitad de',
+      rules: { 1: 'Por 1 se queda igual.', 2: 'Solo duplica el otro número.', 3: 'Duplícalo y súmale uno más.', 4: 'Duplica y vuelve a duplicar.', 5: 'Por 10 y luego la mitad.', 6: 'Por 5 y súmale uno más.', 7: 'Por 5 más por 2.', 8: 'Duplica tres veces.', 9: 'Por 10 y quita uno.', 10: 'Añade un cero al final.', 11: 'Hasta 9, escribe la cifra dos veces. Después, por 10 y súmale uno más.', 12: 'Por 10 más por 2.' },
+    },
+    ca: {
+      title: 'Taules <span>Dojo</span>',
+      belts: [['Cinturó blanc', 'el cinturó blanc'], ['Cinturó groc', 'el cinturó groc'], ['Cinturó taronja', 'el cinturó taronja'], ['Cinturó verd', 'el cinturó verd'], ['Cinturó blau', 'el cinturó blau'], ['Cinturó lila', 'el cinturó lila'], ['Cinturó marró', 'el cinturó marró'], ['Cinturó negre', 'el cinturó negre']],
+      moreTo: (n, to) => `${n === 1 ? 'Et falta 1' : `Et falten ${n}`} per ${to.replace(/^el /, 'al ')}`,
+      allDone: 'Totes dominades. Ets una llegenda!',
+      earned: (name, to) => `Has guanyat ${to}!`,
+      masteredN: n => `${n} ${n === 1 ? 'dominada' : 'dominades'}.`,
+      statMastered: 'Dominades', statStreak: 'Dies seguits', statBest: 'Rècord blitz',
+      pickTables: 'Tria les teves taules', selected: n => `${n} ${n === 1 ? 'triada' : 'triades'}`, noneSelected: 'cap triada', pickOne: 'Tria almenys una taula',
+      practice: 'Pràctica', practiceSub: n => `${n} preguntes amb pistes`,
+      blitz: 'Blitz', blitzSub: n => `${n} segons. Ràpid!`,
+      smart: 'Barreja intel·ligent', smartSub: 'Les que més et costen, de totes les taules',
+      map: 'Mapa de progrés', tapSquare: 'Toca un quadre',
+      legend: ['Sense provar', 'Difícil', 'Aprenent', 'Dominada'],
+      peekIntro: 'Cada quadre és una multiplicació. Encerta-la ràpid unes quantes vegades i es posarà verda.',
+      status: ['sense provar', 'difícil', 'aprenent', 'dominada'],
+      rightOf: (r, n) => `${r}/${n} bé`,
+      times: 'per', sec: 's',
+      correctSoFar: n => `<b>${n}</b> ${n === 1 ? 'encert' : 'encerts'}`,
+      nice: 'Molt bé!', answer: 'La resposta', trick: 'Truc', gotIt: 'Entesos, següent', check: 'Comprova', del: 'Esborra', back: 'Enrere',
+      newBest: 'Nou rècord!', bestSoFar: n => `El teu rècord és ${n}`,
+      perfect: 'Ronda perfecta!', strong: 'Molt bé!', goodWork: 'Bona feina. Les difícils tornaran fins que te les sàpigues.',
+      roundDone: 'Ronda acabada', correctIn: n => `Encerts en ${n} segons`, correct: 'Encerts',
+      newMastered: n => `+${n} ${n === 1 ? 'nova dominada' : 'noves dominades'}`,
+      practiceThese: 'Repassa aquestes', again: 'Torna a jugar', home: 'Torna al dojo',
+      tricks: 'Trucs', tricksNote: 'T’encalles? Fes servir la taula més fàcil. Per a 7 × 9, gira-ho a 9 × 7 i fes servir el truc del 9.',
+      flip: 'Gira-ho.', flipSub: '3 × 8 és el mateix que 8 × 3. Aprèn-ne una i te les saps totes dues.',
+      settings: 'Configuració', sounds: 'Sons', on: 'Sí', off: 'No', language: 'Idioma',
+      reset: 'Esborra tot el progrés', resetNote: 'Esborra el mapa, la ratxa i el rècord en aquest dispositiu.', resetBtn: 'Esborra', tapAgain: 'Toca un altre cop per esborrar',
+      savedNote: 'El progrés es desa en aquest dispositiu. Afegeix l’app a la pantalla d’inici per fer-la servir sense connexió.',
+      double: 'doble de', half: 'meitat de',
+      rules: { 1: 'Per 1 es queda igual.', 2: 'Només dobla l’altre número.', 3: 'Dobla’l i suma-n’hi un més.', 4: 'Dobla i torna a doblar.', 5: 'Per 10 i després la meitat.', 6: 'Per 5 i suma-n’hi un més.', 7: 'Per 5 més per 2.', 8: 'Dobla tres vegades.', 9: 'Per 10 i treu-ne un.', 10: 'Afegeix un zero al final.', 11: 'Fins a 9, escriu la xifra dues vegades. Després, per 10 i suma-n’hi un més.', 12: 'Per 10 més per 2.' },
+    },
+    ru: {
+      title: 'Таблица <span>Dojo</span>',
+      belts: [['Белый пояс', 'белого пояса'], ['Жёлтый пояс', 'жёлтого пояса'], ['Оранжевый пояс', 'оранжевого пояса'], ['Зелёный пояс', 'зелёного пояса'], ['Синий пояс', 'синего пояса'], ['Фиолетовый пояс', 'фиолетового пояса'], ['Коричневый пояс', 'коричневого пояса'], ['Чёрный пояс', 'чёрного пояса']],
+      moreTo: (n, to) => `Ещё ${n} ${ruPl(n, 'пример', 'примера', 'примеров')} до ${to}`,
+      allDone: 'Выучено всё. Легенда!',
+      earned: name => `Ура, ${name.toLowerCase()}!`,
+      masteredN: n => `${n} ${ruPl(n, 'пример выучен', 'примера выучено', 'примеров выучено')}.`,
+      statMastered: 'Выучено', statStreak: 'Дней подряд', statBest: 'Рекорд блица',
+      pickTables: 'Выбери таблицы', selected: n => `${n} ${ruPl(n, 'выбрана', 'выбрано', 'выбрано')}`, noneSelected: 'ничего не выбрано', pickOne: 'Выбери хотя бы одну таблицу',
+      practice: 'Тренировка', practiceSub: n => `${n} примеров с подсказками`,
+      blitz: 'Блиц', blitzSub: n => `${n} секунд. Быстрее!`,
+      smart: 'Умный микс', smartSub: 'Самые трудные примеры из всех таблиц',
+      map: 'Карта прогресса', tapSquare: 'Нажми на клетку',
+      legend: ['Не было', 'Трудно', 'Учу', 'Выучено'],
+      peekIntro: 'Каждая клетка — один пример. Ответь правильно и быстро несколько раз, и она станет зелёной.',
+      status: ['ещё не было', 'трудно', 'учу', 'выучено'],
+      rightOf: (r, n) => `${r}/${n} верно`,
+      times: 'на', sec: 'с',
+      correctSoFar: n => `<b>${n}</b> верно`,
+      nice: 'Отлично!', answer: 'Ответ', trick: 'Приём', gotIt: 'Понятно, дальше', check: 'Проверить', del: 'Стереть', back: 'Назад',
+      newBest: 'Новый рекорд!', bestSoFar: n => `Рекорд ${n}`,
+      perfect: 'Идеально!', strong: 'Очень хорошо!', goodWork: 'Хорошая работа. Трудные примеры будут возвращаться, пока не запомнятся.',
+      roundDone: 'Раунд окончен', correctIn: n => `Верно за ${n} секунд`, correct: 'Верно',
+      newMastered: n => `+${n} ${ruPl(n, 'новый пример выучен', 'новых примера выучено', 'новых примеров выучено')}`,
+      practiceThese: 'Повтори эти', again: 'Ещё раз', home: 'На главную',
+      tricks: 'Приёмы', tricksNote: 'Не получается? Используй самую лёгкую таблицу. 7 × 9 то же самое, что 9 × 7, так что подойдёт приём для 9.',
+      flip: 'Переставь.', flipSub: '3 × 8 то же самое, что 8 × 3. Выучи один пример, и знаешь оба.',
+      settings: 'Настройки', sounds: 'Звуки', on: 'Вкл', off: 'Выкл', language: 'Язык',
+      reset: 'Сбросить прогресс', resetNote: 'Очищает карту, серию дней и рекорд на этом устройстве.', resetBtn: 'Сбросить', tapAgain: 'Нажми ещё раз',
+      savedNote: 'Прогресс хранится на этом устройстве. Добавь приложение на главный экран, чтобы заниматься без интернета.',
+      double: 'дважды', half: 'половина',
+      rules: { 1: 'При умножении на 1 число не меняется.', 2: 'Просто удвой другое число.', 3: 'Удвой и прибавь ещё одно.', 4: 'Удвой, потом удвой ещё раз.', 5: 'Умножь на 10 и раздели пополам.', 6: 'Умножь на 5 и прибавь ещё одно.', 7: 'На 5 плюс на 2.', 8: 'Удвой три раза.', 9: 'Умножь на 10 и отними одно.', 10: 'Допиши ноль в конце.', 11: 'До 9 просто напиши цифру дважды. Дальше умножь на 10 и прибавь ещё одно.', 12: 'На 10 плюс на 2.' },
+    },
+  };
+  function detectLang() {
+    const list = navigator.languages || [navigator.language || 'en'];
+    for (const l of list) { const c = String(l).slice(0, 2).toLowerCase(); if (I18N[c]) return c; }
+    return 'en';
+  }
+
   // ---------- storage ----------
-  function fresh() { return { facts: {}, days: [], blitzBest: 0, sound: true, tables: [6, 7, 8] }; }
+  function fresh() { return { facts: {}, days: [], blitzBest: 0, sound: true, tables: [6, 7, 8], lang: detectLang() }; }
   function load() {
     try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && r.facts) return Object.assign(fresh(), r); } catch (e) {}
     return fresh();
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   let S = load();
+  let L = I18N[S.lang] || I18N.en;
+  function setLang(code) { S.lang = I18N[code] ? code : 'en'; L = I18N[S.lang]; document.documentElement.lang = S.lang; save(); }
+  document.documentElement.lang = S.lang;
 
   const fk = (a, b) => Math.min(a, b) + 'x' + Math.max(a, b);
   const fact = (a, b) => S.facts[fk(a, b)] || { box: 0, seen: 0, right: 0 };
@@ -233,19 +385,19 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
 
   // ---------- tricks ----------
   // Each example is a column of steps, one action per line. Lines starting with "= " line up on the "=".
-  const TRICKS = {
-    1: ['Anything times 1 stays the same.', n => [`1 × ${n}`, `= ${n}`]],
-    2: ['Just double the other number.', n => [`2 × ${n}`, `= ${n} + ${n}`, `= ${2 * n}`]],
-    3: ['Double it, then add one more.', n => [`3 × ${n}`, `= 2 × ${n} + ${n}`, `= ${2 * n} + ${n}`, `= ${3 * n}`]],
-    4: ['Double, then double again.', n => [`4 × ${n}`, `double ${n} = ${2 * n}`, `double ${2 * n} = ${4 * n}`]],
-    5: ['Times 10, then cut in half.', n => [`5 × ${n}`, `10 × ${n} = ${10 * n}`, `half of ${10 * n} = ${5 * n}`]],
-    6: ['Times 5, then add one more.', n => [`6 × ${n}`, `= 5 × ${n} + ${n}`, `= ${5 * n} + ${n}`, `= ${6 * n}`]],
-    7: ['Times 5 plus times 2.', n => [`7 × ${n}`, `= 5 × ${n} + 2 × ${n}`, `= ${5 * n} + ${2 * n}`, `= ${7 * n}`]],
-    8: ['Double three times.', n => [`8 × ${n}`, `double ${n} = ${2 * n}`, `double ${2 * n} = ${4 * n}`, `double ${4 * n} = ${8 * n}`]],
-    9: ['Times 10, then take one away.', n => [`9 × ${n}`, `= 10 × ${n} − ${n}`, `= ${10 * n} − ${n}`, `= ${9 * n}`]],
-    10: ['Stick a zero on the end.', n => [`10 × ${n}`, `= ${10 * n}`]],
-    11: ['Up to 9, write the digit twice. After that, times 10 plus one more.', n => n <= 9 ? [`11 × ${n}`, `= ${n}${n}`] : [`11 × ${n}`, `= 10 × ${n} + ${n}`, `= ${10 * n} + ${n}`, `= ${11 * n}`]],
-    12: ['Times 10 plus times 2.', n => [`12 × ${n}`, `= 10 × ${n} + 2 × ${n}`, `= ${10 * n} + ${2 * n}`, `= ${12 * n}`]],
+  const STEPS = {
+    1: n => [`1 × ${n}`, `= ${n}`],
+    2: n => [`2 × ${n}`, `= ${n} + ${n}`, `= ${2 * n}`],
+    3: n => [`3 × ${n}`, `= 2 × ${n} + ${n}`, `= ${2 * n} + ${n}`, `= ${3 * n}`],
+    4: n => [`4 × ${n}`, `${L.double} ${n} = ${2 * n}`, `${L.double} ${2 * n} = ${4 * n}`],
+    5: n => [`5 × ${n}`, `10 × ${n} = ${10 * n}`, `${L.half} ${10 * n} = ${5 * n}`],
+    6: n => [`6 × ${n}`, `= 5 × ${n} + ${n}`, `= ${5 * n} + ${n}`, `= ${6 * n}`],
+    7: n => [`7 × ${n}`, `= 5 × ${n} + 2 × ${n}`, `= ${5 * n} + ${2 * n}`, `= ${7 * n}`],
+    8: n => [`8 × ${n}`, `${L.double} ${n} = ${2 * n}`, `${L.double} ${2 * n} = ${4 * n}`, `${L.double} ${4 * n} = ${8 * n}`],
+    9: n => [`9 × ${n}`, `= 10 × ${n} − ${n}`, `= ${10 * n} − ${n}`, `= ${9 * n}`],
+    10: n => [`10 × ${n}`, `= ${10 * n}`],
+    11: n => n <= 9 ? [`11 × ${n}`, `= ${n}${n}`] : [`11 × ${n}`, `= 10 × ${n} + ${n}`, `= ${10 * n} + ${n}`, `= ${11 * n}`],
+    12: n => [`12 × ${n}`, `= 10 × ${n} + 2 × ${n}`, `= ${10 * n} + ${2 * n}`, `= ${12 * n}`],
   };
   function stepsHTML(lines) {
     return `<div class="steps">${lines.map(l => l.startsWith('= ') ? `<span>=</span><span>${esc(l.slice(2))}</span>` : `<span></span><span>${esc(l)}</span>`).join('')}</div>`;
@@ -254,8 +406,9 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
   function hintFor(a, b) {
     const t = EASY.find(x => x === a || x === b);
     const other = t === a ? b : a;
-    return { rule: TRICKS[t][0], lines: TRICKS[t][1](other) };
+    return { rule: L.rules[t], lines: STEPS[t](other) };
   }
+  const hintHTML = h => `<div>${esc(h.rule)}</div>${stepsHTML(h.lines)}`;
 
   // ---------- sound ----------
   let ac;
@@ -280,9 +433,9 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
   let timer = null;
 
   function bar(title, back) {
-    return `<header class="bar">${back ? `<button class="iconbtn" data-act="home" aria-label="Back">←</button>` : ''}
+    return `<header class="bar">${back ? `<button class="iconbtn" data-act="home" aria-label="${L.back}">←</button>` : ''}
       <h1>${title}</h1>
-      ${back ? '' : `<button class="iconbtn" data-act="tricks" aria-label="Tricks">?</button><button class="iconbtn" data-act="settings" aria-label="Settings">⚙</button>`}</header>`;
+      ${back ? '' : `<button class="iconbtn" data-act="tricks" aria-label="${L.tricks}">?</button><button class="iconbtn" data-act="settings" aria-label="${L.settings}">⚙</button>`}</header>`;
   }
 
   function tableDot(t) {
@@ -302,45 +455,45 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
     for (let c = 1; c <= 12; c++) grid += `<div class="h">${c}</div>`;
     for (let r = 1; r <= 12; r++) {
       grid += `<div class="h">${r}</div>`;
-      for (let c = 1; c <= 12; c++) grid += `<button class="s${level(fact(r, c))}" data-cell="${r},${c}" aria-label="${r} times ${c}"></button>`;
+      for (let c = 1; c <= 12; c++) grid += `<button class="s${level(fact(r, c))}" data-cell="${r},${c}" aria-label="${r} ${L.times} ${c}"></button>`;
     }
-    app.innerHTML = bar('Times Table <span>Dojo</span>') + `
+    app.innerHTML = bar(L.title) + `
       <section class="belt">
         <div class="belt-top"><div class="belt-swatch" style="background:${b.color}"></div>
-          <div><div class="belt-name">${b.name}</div>
-          <div class="belt-sub">${nb ? `${nb.need - m} more facts to ${nb.name.toLowerCase()}` : 'Every fact mastered. Legend.'}</div></div></div>
+          <div><div class="belt-name">${L.belts[bi][0]}</div>
+          <div class="belt-sub">${nb ? L.moreTo(nb.need - m, L.belts[bi + 1][1]) : L.allDone}</div></div></div>
         <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
         <div class="stats">
-          <div class="stat"><b>${m}<small style="font-size:12px;color:var(--muted)">/${TOTAL_FACTS}</small></b><span>Mastered</span></div>
-          <div class="stat"><b>${streak()}</b><span>Day streak</span></div>
-          <div class="stat"><b>${S.blitzBest}</b><span>Blitz best</span></div>
+          <div class="stat"><b>${m}<small style="font-size:12px;color:var(--muted)">/${TOTAL_FACTS}</small></b><span>${L.statMastered}</span></div>
+          <div class="stat"><b>${streak()}</b><span>${L.statStreak}</span></div>
+          <div class="stat"><b>${S.blitzBest}</b><span>${L.statBest}</span></div>
         </div>
       </section>
 
-      <div class="sec"><h2>Pick your tables</h2><small id="selcount"></small></div>
+      <div class="sec"><h2>${L.pickTables}</h2><small id="selcount"></small></div>
       <div class="chips">${chips}</div>
       <div class="modes">
-        <button class="mode primary" data-act="practice"><b>Practice</b><span>${ROUND} questions with hints</span></button>
-        <button class="mode blitz" data-act="blitz"><b>Blitz</b><span>${BLITZ_SECS} seconds. Go fast.</span></button>
-        <button class="mode wide" data-act="smart"><b>Smart mix</b><span>Picks the facts you find hardest, from every table</span></button>
+        <button class="mode primary" data-act="practice"><b>${L.practice}</b><span>${L.practiceSub(ROUND)}</span></button>
+        <button class="mode blitz" data-act="blitz"><b>${L.blitz}</b><span>${L.blitzSub(BLITZ_SECS)}</span></button>
+        <button class="mode wide" data-act="smart"><b>${L.smart}</b><span>${L.smartSub}</span></button>
       </div>
 
-      <div class="sec"><h2>Mastery map</h2><small>Tap a square</small></div>
+      <div class="sec"><h2>${L.map}</h2><small>${L.tapSquare}</small></div>
       <div class="gridwrap">
         <div class="mgrid">${grid}</div>
-        <div class="legend"><span><i style="background:var(--line)"></i>Not tried</span><span><i style="background:color-mix(in srgb,var(--bad) 70%,var(--surface))"></i>Tricky</span><span><i style="background:var(--pop)"></i>Learning</span><span><i style="background:var(--good)"></i>Mastered</span></div>
-        <div class="peek" id="peek">Each square is one fact. Answer it right and fast a few times and it turns green.</div>
+        <div class="legend"><span><i style="background:var(--line)"></i>${L.legend[0]}</span><span><i style="background:color-mix(in srgb,var(--bad) 70%,var(--surface))"></i>${L.legend[1]}</span><span><i style="background:var(--pop)"></i>${L.legend[2]}</span><span><i style="background:var(--good)"></i>${L.legend[3]}</span></div>
+        <div class="peek" id="peek">${L.peekIntro}</div>
       </div>`;
     updateSel();
   }
 
   function updateSel() {
     const el = document.getElementById('selcount');
-    if (el) el.textContent = S.tables.length ? S.tables.length + ' selected' : 'none selected';
+    if (el) el.textContent = S.tables.length ? L.selected(S.tables.length) : L.noneSelected;
   }
 
   function startGame(kind, tables) {
-    if (!tables.length) { const el = document.getElementById('selcount'); if (el) { el.textContent = 'Pick at least one table'; el.style.color = 'var(--bad)'; } return; }
+    if (!tables.length) { const el = document.getElementById('selcount'); if (el) { el.textContent = L.pickOne; el.style.color = 'var(--bad)'; } return; }
     G = { kind, tables, n: 0, right: 0, misses: [], queue: [], input: '', last: null, locked: false, startMastered: mastered(), startBelt: belt(mastered()) };
     if (kind === 'blitz') { G.ends = Date.now() + BLITZ_SECS * 1000; timer = setInterval(tick, 200); }
     next();
@@ -361,21 +514,21 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
     const [a, b] = G.q;
     const blitz = G.kind === 'blitz';
     const prog = blitz ? Math.max(0, (G.ends - Date.now()) / (BLITZ_SECS * 1000)) * 100 : G.n / ROUND * 100;
-    const count = blitz ? Math.ceil(Math.max(0, G.ends - Date.now()) / 1000) + 's' : `${Math.min(G.n + 1, ROUND)}/${ROUND}`;
-    const title = blitz ? 'Blitz' : G.kind === 'smart' ? 'Smart mix' : 'Practice';
+    const count = blitz ? Math.ceil(Math.max(0, G.ends - Date.now()) / 1000) + L.sec : `${Math.min(G.n + 1, ROUND)}/${ROUND}`;
+    const title = blitz ? L.blitz : G.kind === 'smart' ? L.smart : L.practice;
     app.innerHTML = bar(title, true) + `
       <section class="play">
         <div class="hud"><div class="meter"><i id="prog" style="width:${prog}%;${blitz ? 'background:var(--pop)' : ''}"></i></div><div class="count" id="count">${count}</div></div>
-        ${blitz ? `<div class="feedback"><b>${G.right}</b> correct so far</div>` : ''}
+        ${blitz ? `<div class="feedback">${L.correctSoFar(G.right)}</div>` : ''}
         <div class="card ${state || ''}" id="card">
           <div class="q">${a}<span class="x">×</span>${b}</div>
           <div class="ans ${G.input ? 'has' : ''}" id="ans" aria-live="polite">${esc(G.input) || '?'}</div>
-          ${G.showHint ? `<div class="hint"><div class="label">The answer</div><div class="right">${a} × ${b} = ${a * b}</div><div class="label">Trick</div>${(h => `<div>${h.rule}</div>${stepsHTML(h.lines)}`)(hintFor(a, b))}</div>` : `<div class="feedback" id="fb">${state === 'ok' ? 'Nice!' : ''}</div>`}
+          ${G.showHint ? `<div class="hint"><div class="label">${L.answer}</div><div class="right">${a} × ${b} = ${a * b}</div><div class="label">${L.trick}</div>${hintHTML(hintFor(a, b))}</div>` : `<div class="feedback" id="fb">${state === 'ok' ? L.nice : ''}</div>`}
         </div>
-        ${G.showHint ? `<button class="btn" data-act="gotit">Got it, next</button>` : `
+        ${G.showHint ? `<button class="btn" data-act="gotit">${L.gotIt}</button>` : `
         <div class="pad">
           ${[1,2,3,4,5,6,7,8,9].map(d => `<button data-d="${d}">${d}</button>`).join('')}
-          <button class="del" data-d="del" aria-label="Delete">⌫</button><button data-d="0">0</button><button class="go" data-d="go">Check</button>
+          <button class="del" data-d="del" aria-label="${L.del}">⌫</button><button data-d="0">0</button><button class="go" data-d="go">${L.check}</button>
         </div>`}
       </section>`;
   }
@@ -427,7 +580,7 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
     const left = G.ends - Date.now();
     const p = document.getElementById('prog'), c = document.getElementById('count');
     if (p) p.style.width = Math.max(0, left / (BLITZ_SECS * 1000) * 100) + '%';
-    if (c) c.textContent = Math.ceil(Math.max(0, left) / 1000) + 's';
+    if (c) c.textContent = Math.ceil(Math.max(0, left) / 1000) + L.sec;
     if (left <= 0 && !G.locked) finish();
   }
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
@@ -442,20 +595,20 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
     if (blitz && g.right > S.blitzBest) { S.blitzBest = g.right; record = true; save(); }
     const uniqMiss = [...new Set(g.misses)];
     const msg = blitz
-      ? (record ? 'New personal best!' : `Best so far: ${S.blitzBest}`)
-      : g.right === g.n ? 'Perfect round.' : g.right >= g.n * 0.8 ? 'Strong round.' : 'Good work. The tricky ones will come back until they stick.';
-    app.innerHTML = bar(blitz ? 'Blitz' : 'Round done', true) + `
+      ? (record ? L.newBest : L.bestSoFar(S.blitzBest))
+      : g.right === g.n ? L.perfect : g.right >= g.n * 0.8 ? L.strong : L.goodWork;
+    app.innerHTML = bar(blitz ? L.blitz : L.roundDone, true) + `
       <section class="result">
-        ${bi > g.startBelt ? `<div class="banner"><b>You earned your ${BELTS[bi].name}!</b>${m} facts mastered.</div>` : ''}
+        ${bi > g.startBelt ? `<div class="banner"><b>${L.earned(L.belts[bi][0], L.belts[bi][1])}</b>${L.masteredN(m)}</div>` : ''}
         <div class="card">
-          <div class="belt-sub">${blitz ? 'Correct in 60 seconds' : 'Correct'}</div>
+          <div class="belt-sub">${blitz ? L.correctIn(BLITZ_SECS) : L.correct}</div>
           <div class="big">${g.right}${blitz ? '' : `<span style="font-size:28px;color:var(--muted)">/${g.n}</span>`}</div>
           <div>${msg}</div>
-          ${newly > 0 ? `<div class="belt-sub">+${newly} new fact${newly > 1 ? 's' : ''} mastered</div>` : ''}
+          ${newly > 0 ? `<div class="belt-sub">${L.newMastered(newly)}</div>` : ''}
         </div>
-        ${uniqMiss.length ? `<div class="sec" style="margin:4px 0 0"><h2>Practice these</h2></div><div class="misslist">${uniqMiss.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
-        <button class="btn" data-act="again" data-kind="${g.kind}">Play again</button>
-        <button class="btn ghost" data-act="home">Back to dojo</button>
+        ${uniqMiss.length ? `<div class="sec" style="margin:4px 0 0"><h2>${L.practiceThese}</h2></div><div class="misslist">${uniqMiss.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+        <button class="btn" data-act="again" data-kind="${g.kind}">${L.again}</button>
+        <button class="btn ghost" data-act="home">${L.home}</button>
       </section>`;
     lastKind = g.kind; lastTables = g.tables;
   }
@@ -463,17 +616,18 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
 
   function tricks() {
     stop(); G = null;
-    app.innerHTML = bar('Tricks', true) + `<p class="note">Stuck on a fact? Use the easiest table in it. For 7 × 9, flip it to 9 × 7 and use the 9s trick.</p>
-      <div class="tricks">${Object.keys(TRICKS).map(n => `<div class="trick"><div class="n">×${n}</div><b>${TRICKS[n][0]}</b>${stepsHTML(TRICKS[n][1](n == 11 ? 4 : 7))}</div>`).join('')}
-      <div class="trick"><div class="n">a×b</div><b>Flip it.</b><span>3 × 8 is the same as 8 × 3. Learn one, get both free.</span></div></div>`;
+    app.innerHTML = bar(L.tricks, true) + `<p class="note">${L.tricksNote}</p>
+      <div class="tricks">${Object.keys(STEPS).map(Number).map(n => `<div class="trick"><div class="n">×${n}</div><b>${esc(L.rules[n])}</b>${stepsHTML(STEPS[n](n === 11 ? 4 : 7))}</div>`).join('')}
+      <div class="trick"><div class="n">a×b</div><b>${L.flip}</b><span>${L.flipSub}</span></div></div>`;
   }
 
   function settings() {
     stop(); G = null;
-    app.innerHTML = bar('Settings', true) + `<div class="settings">
-      <div class="row"><div>Sounds</div><button class="btn ghost" data-act="sound">${S.sound ? 'On' : 'Off'}</button></div>
-      <div class="row"><div>Reset all progress<div class="note">Clears the mastery map, streak and best score on this device.</div></div><button class="btn danger" data-act="reset">Reset</button></div>
-      <p class="note">Progress is saved on this device. Add the app to your home screen to use it offline.</p></div>`;
+    app.innerHTML = bar(L.settings, true) + `<div class="settings">
+      <div class="row"><div>${L.language}</div><div class="langs">${Object.keys(LANGS).map(c => `<button class="lang ${c === S.lang ? 'on' : ''}" data-act="lang" data-lang="${c}" lang="${c}" aria-pressed="${c === S.lang}">${LANGS[c]}</button>`).join('')}</div></div>
+      <div class="row"><div>${L.sounds}</div><button class="btn ghost" data-act="sound">${S.sound ? L.on : L.off}</button></div>
+      <div class="row"><div>${L.reset}<div class="note">${L.resetNote}</div></div><button class="btn danger" data-act="reset">${L.resetBtn}</button></div>
+      <p class="note">${L.savedNote}</p></div>`;
   }
 
   // ---------- events ----------
@@ -486,8 +640,8 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
       const f = fact(a, b);
       app.querySelectorAll('.mgrid .sel').forEach(x => x.classList.remove('sel'));
       cell.classList.add('sel');
-      const status = !f.seen ? 'not tried yet' : f.box >= 3 ? 'mastered' : f.box === 0 ? 'tricky' : 'learning';
-      document.getElementById('peek').innerHTML = `<div><b>${a} × ${b} = ${a * b}</b> · ${status}${f.seen ? ` · ${f.right}/${f.seen} right` : ''}</div>${(h => `<div>${h.rule}</div>${stepsHTML(h.lines)}`)(hintFor(a, b))}`;
+      const status = L.status[!f.seen ? 0 : f.box >= 3 ? 3 : f.box === 0 ? 1 : 2];
+      document.getElementById('peek').innerHTML = `<div><b>${a} × ${b} = ${a * b}</b> · ${status}${f.seen ? ` · ${L.rightOf(f.right, f.seen)}` : ''}</div>${hintHTML(hintFor(a, b))}`;
       return;
     }
     const act = e.target.closest('[data-act]');
@@ -496,15 +650,16 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
     if (a === 'home') home();
     else if (a === 'tricks') tricks();
     else if (a === 'settings') settings();
+    else if (a === 'lang') { setLang(act.dataset.lang); settings(); }
     else if (a === 'practice') startGame('practice', S.tables.slice());
     else if (a === 'blitz') startGame('blitz', S.tables.slice());
     else if (a === 'smart') startGame('smart', [2,3,4,5,6,7,8,9,10,11,12]);
     else if (a === 'again') startGame(lastKind, lastTables);
     else if (a === 'gotit') { G.showHint = false; after(); }
-    else if (a === 'sound') { S.sound = !S.sound; save(); act.textContent = S.sound ? 'On' : 'Off'; }
+    else if (a === 'sound') { S.sound = !S.sound; save(); act.textContent = S.sound ? L.on : L.off; }
     else if (a === 'reset') {
-      if (act.dataset.confirm) { const keep = S.sound; S = fresh(); S.sound = keep; save(); home(); }
-      else { act.dataset.confirm = '1'; act.textContent = 'Tap again to reset'; }
+      if (act.dataset.confirm) { const keep = { sound: S.sound, lang: S.lang }; S = Object.assign(fresh(), keep); save(); home(); }
+      else { act.dataset.confirm = '1'; act.textContent = L.tapAgain; }
     }
   });
   app.addEventListener('change', e => {

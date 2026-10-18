@@ -8,3 +8,4 @@ Times tables practice for a 12-year-old: adaptive practice with hints, 60-second
 - All paths are relative so the app works under `/dojo/`.
 - Bump `CACHE` in `sw.js` on every release, or installed copies keep the old version.
 - Progress is stored in `localStorage` (`tt-dojo-v1`) on the device only.
+- Languages: English, Spanish, Catalan, Russian (`I18N` in `app.html`). The first run picks the device language; Settings switches it. Every UI string and trick rule lives in `I18N`; add a key to all four languages. Bungee has no Cyrillic, so Russo One is the display fallback for Russian.
