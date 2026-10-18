@@ -1,0 +1,522 @@
+<title>Times Table Dojo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#2D4BFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TT Dojo">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;700&display=swap">
+<style>
+/* Layout: one narrow column app (max 560px), sticky top bar, big thumb-sized number pad on the play screen. */
+:root {
+  --bg: #EEF1FA;
+  --surface: #FFFFFF;
+  --ink: #18204A;
+  --muted: #5A6390;
+  --line: #D5DBEF;
+  --accent: #2D4BFF;
+  --on-accent: #FFFFFF;
+  --pop: #FFC21A;
+  --on-pop: #2A1E00;
+  --good: #16955A;
+  --bad: #E0464B;
+  --display: "Bungee", "Arial Black", Impact, system-ui, sans-serif;
+  --body: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1330; --surface: #19214F; --ink: #EEF1FF; --muted: #9DA6D6; --line: #2B3570;
+  --accent: #7E8DFF; --on-accent: #0E1330; --pop: #FFCA45; --on-pop: #2A1E00; --good: #3DD68C; --bad: #FF6B70;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E1330; --surface: #19214F; --ink: #EEF1FF; --muted: #9DA6D6; --line: #2B3570;
+  --accent: #7E8DFF; --on-accent: #0E1330; --pop: #FFCA45; --on-pop: #2A1E00; --good: #3DD68C; --bad: #FF6B70;
+  color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45;
+  -webkit-tap-highlight-color: transparent; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 32px; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:focus-visible, .chip:focus-within { outline: 3px solid var(--pop); outline-offset: 2px; }
+h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing: .01em; text-wrap: balance; margin: 0; }
+
+/* top bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); display: flex; align-items: center; gap: 12px; padding-block: 14px 10px; }
+.bar h1 { font-size: 20px; flex: 1; }
+.bar h1 span { color: var(--accent); }
+.iconbtn { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); font-size: 18px; }
+
+/* belt card */
+.belt { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; }
+.belt-top { display: flex; align-items: center; gap: 14px; }
+.belt-swatch { width: 54px; height: 18px; border-radius: 4px; position: relative; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+.belt-swatch::after { content: ""; position: absolute; right: 10px; top: -4px; width: 8px; height: 26px; border-radius: 2px; background: inherit; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.belt-name { font-family: var(--display); font-size: 18px; line-height: 1.1; }
+.belt-sub { color: var(--muted); font-size: 14px; }
+.meter { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: inherit; transition: width .5s; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+.stat b { display: block; font-family: var(--display); font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+/* section heads */
+.sec { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 22px 0 10px; }
+.sec h2 { font-size: 16px; }
+.sec small { color: var(--muted); font-size: 13px; }
+
+/* table chips */
+.chips { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.chip label { display: grid; place-items: center; height: 46px; border-radius: 12px; background: var(--surface); border: 2px solid var(--line); font-family: var(--display); font-size: 18px; font-variant-numeric: tabular-nums; }
+.chip input:checked + label { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chip .dot { position: absolute; right: 5px; top: 5px; width: 7px; height: 7px; border-radius: 50%; pointer-events: none; }
+
+/* mode buttons */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.mode { text-align: left; border-radius: var(--r); padding: 14px 16px; display: grid; gap: 2px; min-height: 84px; align-content: center; }
+.mode b { font-family: var(--display); font-weight: 400; font-size: 18px; }
+.mode span { font-size: 13px; opacity: .85; }
+.mode.primary { background: var(--accent); color: var(--on-accent); }
+.mode.blitz { background: var(--pop); color: var(--on-pop); }
+.mode.wide { grid-column: 1 / -1; background: var(--surface); border: 1px solid var(--line); min-height: 0; }
+.mode:active { transform: translateY(1px); }
+
+/* mastery grid */
+.gridwrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; }
+.mgrid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px; }
+.mgrid .h { display: grid; place-items: center; font-family: var(--display); font-size: 11px; color: var(--muted); aspect-ratio: 1; }
+.mgrid button { aspect-ratio: 1; border-radius: 4px; background: var(--line); max-width: 100%; }
+.mgrid .s1 { background: color-mix(in srgb, var(--bad) 70%, var(--surface)); }
+.mgrid .s2 { background: color-mix(in srgb, var(--pop) 55%, var(--surface)); }
+.mgrid .s3 { background: var(--pop); }
+.mgrid .s4 { background: var(--good); }
+.mgrid button.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+.peek { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); font-size: 14px; min-height: 42px; }
+.peek b { font-family: var(--display); font-weight: 400; }
+
+/* play screen */
+.play { display: flex; flex-direction: column; gap: 14px; min-height: calc(100% - 60px); }
+.hud { display: flex; align-items: center; gap: 12px; }
+.hud .meter { flex: 1; }
+.hud .count { font-family: var(--display); font-size: 15px; font-variant-numeric: tabular-nums; min-width: 56px; text-align: right; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 22px 16px 18px; display: grid; justify-items: center; gap: 12px; position: relative; overflow: hidden; }
+.q { font-family: var(--display); font-size: clamp(44px, 14vw, 72px); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.q .x { color: var(--accent); margin: 0 .12em; }
+.ans { min-width: 3.2ch; height: 1.25em; padding: 0 .3em; border-radius: 14px; border: 3px dashed var(--line); display: grid; place-items: center; font-family: var(--display); font-size: clamp(40px, 12vw, 60px); font-variant-numeric: tabular-nums; }
+.ans.has { border-style: solid; border-color: var(--accent); }
+.card.ok { border-color: var(--good); box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 35%, transparent); }
+.card.ok .ans { border-color: var(--good); color: var(--good); }
+.card.no { border-color: var(--bad); animation: shake .35s; }
+.card.no .ans { border-color: var(--bad); color: var(--bad); }
+@keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+.feedback { font-size: 15px; text-align: center; min-height: 1.45em; color: var(--muted); }
+.hint { width: 100%; background: var(--bg); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; text-align: left; }
+.hint .label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.hint .right { font-family: var(--display); font-size: 22px; color: var(--good); }
+
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: auto; }
+.pad button { height: 60px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); font-family: var(--display); font-size: 26px; box-shadow: 0 2px 0 var(--line); }
+.pad button:active { transform: translateY(2px); box-shadow: none; }
+.pad .go { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-size: 18px; box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 60%, #000); }
+.pad .del { font-size: 20px; }
+.btn { height: 54px; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-family: var(--display); font-size: 18px; width: 100%; }
+.btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+
+/* results */
+.result { display: grid; gap: 14px; padding-top: 8px; }
+.big { font-family: var(--display); font-size: 64px; line-height: 1; font-variant-numeric: tabular-nums; }
+.result .card { justify-items: start; }
+.misslist { display: flex; flex-wrap: wrap; gap: 8px; }
+.misslist span { background: color-mix(in srgb, var(--bad) 15%, var(--surface)); border: 1px solid color-mix(in srgb, var(--bad) 40%, var(--surface)); border-radius: 8px; padding: 4px 10px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.banner { background: var(--pop); color: var(--on-pop); border-radius: var(--r); padding: 14px 16px; font-weight: 500; }
+.banner b { font-family: var(--display); font-weight: 400; display: block; font-size: 18px; }
+
+/* tricks */
+.tricks { display: grid; gap: 10px; }
+.trick { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; grid-template-columns: 52px 1fr; gap: 4px 14px; align-items: start; }
+.trick .n { grid-row: span 2; font-family: var(--display); font-size: 26px; color: var(--accent); line-height: 1.1; }
+.trick b { font-weight: 700; }
+.trick span { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+
+.settings { display: grid; gap: 10px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
+.row .btn { width: auto; height: 40px; padding: 0 16px; font-size: 14px; }
+.row .danger { background: var(--bad); color: #fff; }
+.note { color: var(--muted); font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+(function () {
+  const KEY = 'tt-dojo-v1';
+  const ROUND = 15;
+  const BLITZ_SECS = 60;
+  const FAST_MS = 6000;
+  const BELTS = [
+    { name: 'White belt', need: 0, color: '#F4F4F0' },
+    { name: 'Yellow belt', need: 8, color: '#FFD23F' },
+    { name: 'Orange belt', need: 18, color: '#FF8C2B' },
+    { name: 'Green belt', need: 30, color: '#2FB45A' },
+    { name: 'Blue belt', need: 42, color: '#2D6BFF' },
+    { name: 'Purple belt', need: 54, color: '#8A4DFF' },
+    { name: 'Brown belt', need: 66, color: '#8B5A2B' },
+    { name: 'Black belt', need: 78, color: '#15151A' },
+  ];
+  const TOTAL_FACTS = 78; // unique pairs from 1x1 to 12x12
+
+  // ---------- storage ----------
+  function fresh() { return { facts: {}, days: [], blitzBest: 0, sound: true, tables: [6, 7, 8] }; }
+  function load() {
+    try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && r.facts) return Object.assign(fresh(), r); } catch (e) {}
+    return fresh();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  let S = load();
+
+  const fk = (a, b) => Math.min(a, b) + 'x' + Math.max(a, b);
+  const fact = (a, b) => S.facts[fk(a, b)] || { box: 0, seen: 0, right: 0 };
+  const mastered = () => Object.values(S.facts).filter(f => f.box >= 3).length;
+  function level(f) { if (!f.seen) return 0; if (f.box === 0) return 1; if (f.box <= 2) return 2 + (f.box === 2 ? 1 : 0); return 4; }
+
+  function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function streak() {
+    const set = new Set(S.days); let n = 0; const d = new Date();
+    if (!set.has(today())) d.setDate(d.getDate() - 1);
+    for (;;) {
+      const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      if (!set.has(k)) return n; n++; d.setDate(d.getDate() - 1);
+    }
+  }
+  function record(a, b, ok, ms) {
+    const k = fk(a, b);
+    const f = S.facts[k] || { box: 0, seen: 0, right: 0 };
+    f.seen++;
+    if (ok) { f.right++; f.box = ms < FAST_MS ? Math.min(4, f.box + 1) : Math.max(1, f.box); }
+    else f.box = Math.max(0, f.box - 2);
+    S.facts[k] = f;
+    const t = today(); if (!S.days.includes(t)) { S.days.push(t); S.days = S.days.slice(-400); }
+    save();
+  }
+  function belt(n) { let i = 0; BELTS.forEach((b, j) => { if (n >= b.need) i = j; }); return i; }
+
+  // ---------- picking questions ----------
+  function pick(tables, avoid) {
+    const pool = [];
+    tables.forEach(a => { for (let b = 1; b <= 12; b++) pool.push([a, b]); });
+    const w = pool.map(([a, b]) => { const f = fact(a, b); if (a === 1 || b === 1) return 0.3; return f.seen === 0 ? 3 : [8, 5, 3, 1, 0.4][f.box]; });
+    const total = w.reduce((s, x) => s + x, 0);
+    for (let tries = 0; tries < 8; tries++) {
+      let r = Math.random() * total, i = 0;
+      while (r > w[i]) { r -= w[i]; i++; }
+      const [a, b] = pool[Math.min(i, pool.length - 1)];
+      if (avoid && fk(a, b) === avoid && tries < 7) continue;
+      return Math.random() < 0.5 ? [a, b] : [b, a];
+    }
+  }
+
+  // ---------- tricks ----------
+  const TRICKS = {
+    1: ['Anything times 1 stays the same.', n => `1 × ${n} = ${n}`],
+    2: ['Just double the other number.', n => `2 × ${n}: ${n} + ${n} = ${2 * n}`],
+    3: ['Double it, then add one more.', n => `3 × ${n}: ${2 * n} + ${n} = ${3 * n}`],
+    4: ['Double, then double again.', n => `4 × ${n}: ${n} → ${2 * n} → ${4 * n}`],
+    5: ['Times 10, then cut in half.', n => `5 × ${n}: ${10 * n} ÷ 2 = ${5 * n}`],
+    6: ['Times 5, then add one more.', n => `6 × ${n}: ${5 * n} + ${n} = ${6 * n}`],
+    7: ['Times 5 plus times 2.', n => `7 × ${n}: ${5 * n} + ${2 * n} = ${7 * n}`],
+    8: ['Double three times.', n => `8 × ${n}: ${n} → ${2 * n} → ${4 * n} → ${8 * n}`],
+    9: ['Times 10, then take one away.', n => `9 × ${n}: ${10 * n} − ${n} = ${9 * n}`],
+    10: ['Stick a zero on the end.', n => `10 × ${n} = ${10 * n}`],
+    11: ['Up to 9, repeat the digit. After that, times 10 plus one more.', n => n <= 9 ? `11 × ${n} = ${n}${n}` : `11 × ${n}: ${10 * n} + ${n} = ${11 * n}`],
+    12: ['Times 10 plus times 2.', n => `12 × ${n}: ${10 * n} + ${2 * n} = ${12 * n}`],
+  };
+  const EASY = [1, 10, 2, 5, 11, 9, 4, 3, 12, 6, 8, 7];
+  function hintFor(a, b) {
+    const t = EASY.find(x => x === a || x === b);
+    const other = t === a ? b : a;
+    return TRICKS[t][1](other);
+  }
+
+  // ---------- sound ----------
+  let ac;
+  function beep(ok) {
+    if (!S.sound) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'triangle';
+      const t = ac.currentTime;
+      if (ok) { o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(990, t + 0.07); }
+      else { o.frequency.setValueAtTime(220, t); o.frequency.setValueAtTime(170, t + 0.1); }
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.25);
+    } catch (e) {}
+  }
+
+  // ---------- rendering ----------
+  const app = document.getElementById('app');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let G = null; // current game
+  let timer = null;
+
+  function bar(title, back) {
+    return `<header class="bar">${back ? `<button class="iconbtn" data-act="home" aria-label="Back">←</button>` : ''}
+      <h1>${title}</h1>
+      ${back ? '' : `<button class="iconbtn" data-act="tricks" aria-label="Tricks">?</button><button class="iconbtn" data-act="settings" aria-label="Settings">⚙</button>`}</header>`;
+  }
+
+  function tableDot(t) {
+    let sum = 0; for (let b = 1; b <= 12; b++) sum += fact(t, b).box;
+    const avg = sum / 12;
+    return avg >= 3 ? 'var(--good)' : avg >= 1 ? 'var(--pop)' : 'transparent';
+  }
+
+  function home() {
+    stop(); G = null;
+    const m = mastered(), bi = belt(m), b = BELTS[bi], nb = BELTS[bi + 1];
+    const pct = nb ? Math.round((m - b.need) / (nb.need - b.need) * 100) : 100;
+    const sel = new Set(S.tables);
+    let chips = '';
+    for (let t = 1; t <= 12; t++) chips += `<div class="chip"><input type="checkbox" id="t${t}" value="${t}" ${sel.has(t) ? 'checked' : ''}><label for="t${t}">${t}</label><i class="dot" style="background:${tableDot(t)}"></i></div>`;
+    let grid = '<div class="h">×</div>';
+    for (let c = 1; c <= 12; c++) grid += `<div class="h">${c}</div>`;
+    for (let r = 1; r <= 12; r++) {
+      grid += `<div class="h">${r}</div>`;
+      for (let c = 1; c <= 12; c++) grid += `<button class="s${level(fact(r, c))}" data-cell="${r},${c}" aria-label="${r} times ${c}"></button>`;
+    }
+    app.innerHTML = bar('Times Table <span>Dojo</span>') + `
+      <section class="belt">
+        <div class="belt-top"><div class="belt-swatch" style="background:${b.color}"></div>
+          <div><div class="belt-name">${b.name}</div>
+          <div class="belt-sub">${nb ? `${nb.need - m} more facts to ${nb.name.toLowerCase()}` : 'Every fact mastered. Legend.'}</div></div></div>
+        <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
+        <div class="stats">
+          <div class="stat"><b>${m}<small style="font-size:12px;color:var(--muted)">/${TOTAL_FACTS}</small></b><span>Mastered</span></div>
+          <div class="stat"><b>${streak()}</b><span>Day streak</span></div>
+          <div class="stat"><b>${S.blitzBest}</b><span>Blitz best</span></div>
+        </div>
+      </section>
+
+      <div class="sec"><h2>Pick your tables</h2><small id="selcount"></small></div>
+      <div class="chips">${chips}</div>
+      <div class="modes">
+        <button class="mode primary" data-act="practice"><b>Practice</b><span>${ROUND} questions with hints</span></button>
+        <button class="mode blitz" data-act="blitz"><b>Blitz</b><span>${BLITZ_SECS} seconds. Go fast.</span></button>
+        <button class="mode wide" data-act="smart"><b>Smart mix</b><span>Picks the facts you find hardest, from every table</span></button>
+      </div>
+
+      <div class="sec"><h2>Mastery map</h2><small>Tap a square</small></div>
+      <div class="gridwrap">
+        <div class="mgrid">${grid}</div>
+        <div class="legend"><span><i style="background:var(--line)"></i>Not tried</span><span><i style="background:color-mix(in srgb,var(--bad) 70%,var(--surface))"></i>Tricky</span><span><i style="background:var(--pop)"></i>Learning</span><span><i style="background:var(--good)"></i>Mastered</span></div>
+        <div class="peek" id="peek">Each square is one fact. Answer it right and fast a few times and it turns green.</div>
+      </div>`;
+    updateSel();
+  }
+
+  function updateSel() {
+    const el = document.getElementById('selcount');
+    if (el) el.textContent = S.tables.length ? S.tables.length + ' selected' : 'none selected';
+  }
+
+  function startGame(kind, tables) {
+    if (!tables.length) { const el = document.getElementById('selcount'); if (el) { el.textContent = 'Pick at least one table'; el.style.color = 'var(--bad)'; } return; }
+    G = { kind, tables, n: 0, right: 0, misses: [], queue: [], input: '', last: null, locked: false, startMastered: mastered(), startBelt: belt(mastered()) };
+    if (kind === 'blitz') { G.ends = Date.now() + BLITZ_SECS * 1000; timer = setInterval(tick, 200); }
+    next();
+  }
+
+  function next() {
+    G.input = ''; G.locked = false; G.showHint = false;
+    let q = null;
+    const qi = G.queue.findIndex(x => x.at <= G.n);
+    if (qi >= 0) { q = G.queue[qi].q; G.queue.splice(qi, 1); }
+    G.q = q || pick(G.tables, G.last);
+    G.last = fk(G.q[0], G.q[1]);
+    G.t0 = Date.now();
+    drawPlay();
+  }
+
+  function drawPlay(state) {
+    const [a, b] = G.q;
+    const blitz = G.kind === 'blitz';
+    const prog = blitz ? Math.max(0, (G.ends - Date.now()) / (BLITZ_SECS * 1000)) * 100 : G.n / ROUND * 100;
+    const count = blitz ? Math.ceil(Math.max(0, G.ends - Date.now()) / 1000) + 's' : `${Math.min(G.n + 1, ROUND)}/${ROUND}`;
+    const title = blitz ? 'Blitz' : G.kind === 'smart' ? 'Smart mix' : 'Practice';
+    app.innerHTML = bar(title, true) + `
+      <section class="play">
+        <div class="hud"><div class="meter"><i id="prog" style="width:${prog}%;${blitz ? 'background:var(--pop)' : ''}"></i></div><div class="count" id="count">${count}</div></div>
+        ${blitz ? `<div class="feedback"><b>${G.right}</b> correct so far</div>` : ''}
+        <div class="card ${state || ''}" id="card">
+          <div class="q">${a}<span class="x">×</span>${b}</div>
+          <div class="ans ${G.input ? 'has' : ''}" id="ans" aria-live="polite">${esc(G.input) || '?'}</div>
+          ${G.showHint ? `<div class="hint"><div class="label">The answer</div><div class="right">${a} × ${b} = ${a * b}</div><div class="label">Trick</div><div>${esc(hintFor(a, b))}</div></div>` : `<div class="feedback" id="fb">${state === 'ok' ? 'Nice!' : ''}</div>`}
+        </div>
+        ${G.showHint ? `<button class="btn" data-act="gotit">Got it, next</button>` : `
+        <div class="pad">
+          ${[1,2,3,4,5,6,7,8,9].map(d => `<button data-d="${d}">${d}</button>`).join('')}
+          <button class="del" data-d="del" aria-label="Delete">⌫</button><button data-d="0">0</button><button class="go" data-d="go">Check</button>
+        </div>`}
+      </section>`;
+  }
+
+  function press(d) {
+    if (!G || G.locked || G.showHint) return;
+    if (d === 'del') G.input = G.input.slice(0, -1);
+    else if (d === 'go') return check();
+    else if (G.input.length < 3) G.input += d;
+    const ans = document.getElementById('ans');
+    if (ans) { ans.textContent = G.input || '?'; ans.classList.toggle('has', !!G.input); }
+  }
+
+  function check() {
+    if (!G.input) return;
+    const [a, b] = G.q;
+    const ms = Date.now() - G.t0;
+    const ok = Number(G.input) === a * b;
+    record(a, b, ok, ms);
+    beep(ok);
+    G.n++;
+    G.locked = true;
+    if (ok) {
+      G.right++;
+      drawPlay('ok');
+      setTimeout(() => { if (G) after(); }, G.kind === 'blitz' ? 260 : 450);
+    } else {
+      G.misses.push(`${a} × ${b} = ${a * b}`);
+      if (G.kind === 'blitz') {
+        drawPlay('no');
+        const fb = document.getElementById('fb'); if (fb) fb.textContent = `${a} × ${b} = ${a * b}`;
+        setTimeout(() => { if (G) after(); }, 1100);
+      } else {
+        G.queue.push({ q: [a, b], at: G.n + 3 });
+        drawPlay('no');
+        setTimeout(() => { if (G) { G.showHint = true; drawPlay('no'); } }, 450);
+      }
+    }
+  }
+
+  function after() {
+    if (G.kind === 'blitz') { if (Date.now() >= G.ends) return finish(); return next(); }
+    if (G.n >= ROUND) return finish();
+    next();
+  }
+
+  function tick() {
+    if (!G || G.kind !== 'blitz') return stop();
+    const left = G.ends - Date.now();
+    const p = document.getElementById('prog'), c = document.getElementById('count');
+    if (p) p.style.width = Math.max(0, left / (BLITZ_SECS * 1000) * 100) + '%';
+    if (c) c.textContent = Math.ceil(Math.max(0, left) / 1000) + 's';
+    if (left <= 0 && !G.locked) finish();
+  }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+  function finish() {
+    stop();
+    const g = G; G = null;
+    const m = mastered(), bi = belt(m);
+    const newly = m - g.startMastered;
+    const blitz = g.kind === 'blitz';
+    let record = false;
+    if (blitz && g.right > S.blitzBest) { S.blitzBest = g.right; record = true; save(); }
+    const uniqMiss = [...new Set(g.misses)];
+    const msg = blitz
+      ? (record ? 'New personal best!' : `Best so far: ${S.blitzBest}`)
+      : g.right === g.n ? 'Perfect round.' : g.right >= g.n * 0.8 ? 'Strong round.' : 'Good work. The tricky ones will come back until they stick.';
+    app.innerHTML = bar(blitz ? 'Blitz' : 'Round done', true) + `
+      <section class="result">
+        ${bi > g.startBelt ? `<div class="banner"><b>You earned your ${BELTS[bi].name}!</b>${m} facts mastered.</div>` : ''}
+        <div class="card">
+          <div class="belt-sub">${blitz ? 'Correct in 60 seconds' : 'Correct'}</div>
+          <div class="big">${g.right}${blitz ? '' : `<span style="font-size:28px;color:var(--muted)">/${g.n}</span>`}</div>
+          <div>${msg}</div>
+          ${newly > 0 ? `<div class="belt-sub">+${newly} new fact${newly > 1 ? 's' : ''} mastered</div>` : ''}
+        </div>
+        ${uniqMiss.length ? `<div class="sec" style="margin:4px 0 0"><h2>Practice these</h2></div><div class="misslist">${uniqMiss.map(x => `<span>${x}</span>`).join('')}</div>` : ''}
+        <button class="btn" data-act="again" data-kind="${g.kind}">Play again</button>
+        <button class="btn ghost" data-act="home">Back to dojo</button>
+      </section>`;
+    lastKind = g.kind; lastTables = g.tables;
+  }
+  let lastKind = 'practice', lastTables = [];
+
+  function tricks() {
+    stop(); G = null;
+    app.innerHTML = bar('Tricks', true) + `<p class="note">Stuck on a fact? Use the easiest table in it. For 7 × 9, use the 9s trick: 70 − 7 = 63.</p>
+      <div class="tricks">${Object.keys(TRICKS).map(n => `<div class="trick"><div class="n">×${n}</div><b>${TRICKS[n][0]}</b><span>${esc(TRICKS[n][1](n == 11 ? 4 : 7))}</span></div>`).join('')}
+      <div class="trick"><div class="n">a×b</div><b>Flip it.</b><span>3 × 8 is the same as 8 × 3. Learn one, get both free.</span></div></div>`;
+  }
+
+  function settings() {
+    stop(); G = null;
+    app.innerHTML = bar('Settings', true) + `<div class="settings">
+      <div class="row"><div>Sounds</div><button class="btn ghost" data-act="sound">${S.sound ? 'On' : 'Off'}</button></div>
+      <div class="row"><div>Reset all progress<div class="note">Clears the mastery map, streak and best score on this device.</div></div><button class="btn danger" data-act="reset">Reset</button></div>
+      <p class="note">Progress is saved on this device. Add the app to your home screen to use it offline.</p></div>`;
+  }
+
+  // ---------- events ----------
+  app.addEventListener('click', e => {
+    const d = e.target.closest('[data-d]');
+    if (d) return press(d.dataset.d);
+    const cell = e.target.closest('[data-cell]');
+    if (cell) {
+      const [a, b] = cell.dataset.cell.split(',').map(Number);
+      const f = fact(a, b);
+      app.querySelectorAll('.mgrid .sel').forEach(x => x.classList.remove('sel'));
+      cell.classList.add('sel');
+      const status = !f.seen ? 'not tried yet' : f.box >= 3 ? 'mastered' : f.box === 0 ? 'tricky' : 'learning';
+      document.getElementById('peek').innerHTML = `<b>${a} × ${b} = ${a * b}</b> · ${status}${f.seen ? ` · ${f.right}/${f.seen} right` : ''}<br>${esc(hintFor(a, b))}`;
+      return;
+    }
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    const a = act.dataset.act;
+    if (a === 'home') home();
+    else if (a === 'tricks') tricks();
+    else if (a === 'settings') settings();
+    else if (a === 'practice') startGame('practice', S.tables.slice());
+    else if (a === 'blitz') startGame('blitz', S.tables.slice());
+    else if (a === 'smart') startGame('smart', [2,3,4,5,6,7,8,9,10,11,12]);
+    else if (a === 'again') startGame(lastKind, lastTables);
+    else if (a === 'gotit') { G.showHint = false; after(); }
+    else if (a === 'sound') { S.sound = !S.sound; save(); act.textContent = S.sound ? 'On' : 'Off'; }
+    else if (a === 'reset') {
+      if (act.dataset.confirm) { const keep = S.sound; S = fresh(); S.sound = keep; save(); home(); }
+      else { act.dataset.confirm = '1'; act.textContent = 'Tap again to reset'; }
+    }
+  });
+  app.addEventListener('change', e => {
+    if (e.target.matches('.chip input')) {
+      S.tables = [...app.querySelectorAll('.chip input:checked')].map(x => Number(x.value));
+      save(); const el = document.getElementById('selcount'); if (el) el.style.color = ''; updateSel();
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (!G) return;
+    if (G.showHint && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); G.showHint = false; return after(); }
+    if (/^[0-9]$/.test(e.key)) press(e.key);
+    else if (e.key === 'Backspace') press('del');
+    else if (e.key === 'Enter') { e.preventDefault(); press('go'); }
+  });
+
+  home();
+
+  if ('serviceWorker' in navigator) {
+    try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
+  }
+})();
+</script>
