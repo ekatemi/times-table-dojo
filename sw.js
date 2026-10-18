@@ -1,4 +1,4 @@
-const CACHE = 'tt-dojo-v7';
+const CACHE = 'tt-dojo-v8';
 const SHELL = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -15,7 +15,10 @@ self.addEventListener('fetch', e => {
   const own = new URL(req.url).origin === self.location.origin;
   const put = res => { if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); } return res; };
   if (own) {
-    e.respondWith(fetch(req, { cache: 'no-cache' }).then(put).catch(() =>
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(res =>
+      // The app moved to dojo.mikhaylova.dev: a page cannot be answered with a redirected response, so redirect explicitly.
+      res.redirected && req.mode === 'navigate' ? Response.redirect(res.url, 302) : put(res)
+    ).catch(() =>
       caches.match(req).then(hit => hit || (req.mode === 'navigate' ? caches.match('index.html') : Response.error()))));
   } else {
     e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(put)));
