@@ -679,7 +679,7 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
   home();
 
   if ('serviceWorker' in navigator) {
-    try { navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}); } catch (e) {}
+    try { navigator.serviceWorker.register('sw.js?v=__BUILD__', { updateViaCache: 'none' }).catch(() => {}); } catch (e) {}
   }
 })();
 </script>
