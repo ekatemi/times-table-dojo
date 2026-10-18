@@ -8,6 +8,6 @@ rm -rf dist && mkdir -p dist
   # A new sw.js URL on every release, so Cloudflare's cache never serves an old service worker.
   sed "s/__BUILD__/$(git rev-parse --short HEAD 2>/dev/null || date +%s)/" app.html
   printf '\n</body>\n</html>\n'; } > dist/index.html
-cp manifest.webmanifest sw.js icon.svg icon-192.png icon-512.png icon-maskable-512.png dist/
+cp manifest.json sw.js icon.svg icon-192.png icon-512.png icon-maskable-512.png dist/
 tar -czf dojo.tgz -C dist .
 echo "Built dist/ and dojo.tgz"
