@@ -101,7 +101,7 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
 .mgrid button.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
 .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
-.peek { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); font-size: 14px; min-height: 42px; }
+.peek { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); font-size: 14px; min-height: 42px; display: grid; gap: 4px; }
 .peek b { font-family: var(--display); font-weight: 400; }
 
 /* play screen */
@@ -146,7 +146,11 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
 .trick { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; grid-template-columns: 52px 1fr; gap: 4px 14px; align-items: start; }
 .trick .n { grid-row: span 2; font-family: var(--display); font-size: 26px; color: var(--accent); line-height: 1.1; }
 .trick b { font-weight: 700; }
-.trick span { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.trick > span { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.steps { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.35; margin-top: 4px; }
+.steps span:nth-child(odd) { color: var(--muted); text-align: right; }
+.trick .steps { font-size: 16px; }
+.peek .steps { font-size: 16px; }
 
 .settings { display: grid; gap: 10px; }
 .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
@@ -228,25 +232,29 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
   }
 
   // ---------- tricks ----------
+  // Each example is a column of steps, one action per line. Lines starting with "= " line up on the "=".
   const TRICKS = {
-    1: ['Anything times 1 stays the same.', n => `1 × ${n} = ${n}`],
-    2: ['Just double the other number.', n => `2 × ${n} is the same as ${n} + ${n} = ${2 * n}`],
-    3: ['Double it, then add one more.', n => `3 × ${n} is the same as 2 × ${n} + ${n} = ${2 * n} + ${n} = ${3 * n}`],
-    4: ['Double, then double again.', n => `4 × ${n} is the same as ${n} doubled twice → ${2 * n} → ${4 * n}`],
-    5: ['Times 10, then cut in half.', n => `5 × ${n} is the same as half of 10 × ${n} = half of ${10 * n} = ${5 * n}`],
-    6: ['Times 5, then add one more.', n => `6 × ${n} is the same as 5 × ${n} + ${n} = ${5 * n} + ${n} = ${6 * n}`],
-    7: ['Times 5 plus times 2.', n => `7 × ${n} is the same as 5 × ${n} + 2 × ${n} = ${5 * n} + ${2 * n} = ${7 * n}`],
-    8: ['Double three times.', n => `8 × ${n} is the same as ${n} doubled three times → ${2 * n} → ${4 * n} → ${8 * n}`],
-    9: ['Times 10, then take one away.', n => `9 × ${n} is the same as 10 × ${n} − ${n} = ${10 * n} − ${n} = ${9 * n}`],
-    10: ['Stick a zero on the end.', n => `10 × ${n} = ${10 * n}`],
-    11: ['Up to 9, write the digit twice. After that, times 10 plus one more.', n => n <= 9 ? `11 × ${n} = ${n}${n}, just write ${n} twice` : `11 × ${n} is the same as 10 × ${n} + ${n} = ${10 * n} + ${n} = ${11 * n}`],
-    12: ['Times 10 plus times 2.', n => `12 × ${n} is the same as 10 × ${n} + 2 × ${n} = ${10 * n} + ${2 * n} = ${12 * n}`],
+    1: ['Anything times 1 stays the same.', n => [`1 × ${n}`, `= ${n}`]],
+    2: ['Just double the other number.', n => [`2 × ${n}`, `= ${n} + ${n}`, `= ${2 * n}`]],
+    3: ['Double it, then add one more.', n => [`3 × ${n}`, `= 2 × ${n} + ${n}`, `= ${2 * n} + ${n}`, `= ${3 * n}`]],
+    4: ['Double, then double again.', n => [`4 × ${n}`, `double ${n} = ${2 * n}`, `double ${2 * n} = ${4 * n}`]],
+    5: ['Times 10, then cut in half.', n => [`5 × ${n}`, `10 × ${n} = ${10 * n}`, `half of ${10 * n} = ${5 * n}`]],
+    6: ['Times 5, then add one more.', n => [`6 × ${n}`, `= 5 × ${n} + ${n}`, `= ${5 * n} + ${n}`, `= ${6 * n}`]],
+    7: ['Times 5 plus times 2.', n => [`7 × ${n}`, `= 5 × ${n} + 2 × ${n}`, `= ${5 * n} + ${2 * n}`, `= ${7 * n}`]],
+    8: ['Double three times.', n => [`8 × ${n}`, `double ${n} = ${2 * n}`, `double ${2 * n} = ${4 * n}`, `double ${4 * n} = ${8 * n}`]],
+    9: ['Times 10, then take one away.', n => [`9 × ${n}`, `= 10 × ${n} − ${n}`, `= ${10 * n} − ${n}`, `= ${9 * n}`]],
+    10: ['Stick a zero on the end.', n => [`10 × ${n}`, `= ${10 * n}`]],
+    11: ['Up to 9, write the digit twice. After that, times 10 plus one more.', n => n <= 9 ? [`11 × ${n}`, `= ${n}${n}`] : [`11 × ${n}`, `= 10 × ${n} + ${n}`, `= ${10 * n} + ${n}`, `= ${11 * n}`]],
+    12: ['Times 10 plus times 2.', n => [`12 × ${n}`, `= 10 × ${n} + 2 × ${n}`, `= ${10 * n} + ${2 * n}`, `= ${12 * n}`]],
   };
+  function stepsHTML(lines) {
+    return `<div class="steps">${lines.map(l => l.startsWith('= ') ? `<span>=</span><span>${esc(l.slice(2))}</span>` : `<span></span><span>${esc(l)}</span>`).join('')}</div>`;
+  }
   const EASY = [1, 10, 2, 5, 11, 9, 4, 3, 12, 6, 8, 7];
   function hintFor(a, b) {
     const t = EASY.find(x => x === a || x === b);
     const other = t === a ? b : a;
-    return TRICKS[t][1](other);
+    return { rule: TRICKS[t][0], lines: TRICKS[t][1](other) };
   }
 
   // ---------- sound ----------
@@ -362,7 +370,7 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
         <div class="card ${state || ''}" id="card">
           <div class="q">${a}<span class="x">×</span>${b}</div>
           <div class="ans ${G.input ? 'has' : ''}" id="ans" aria-live="polite">${esc(G.input) || '?'}</div>
-          ${G.showHint ? `<div class="hint"><div class="label">The answer</div><div class="right">${a} × ${b} = ${a * b}</div><div class="label">Trick</div><div>${esc(hintFor(a, b))}</div></div>` : `<div class="feedback" id="fb">${state === 'ok' ? 'Nice!' : ''}</div>`}
+          ${G.showHint ? `<div class="hint"><div class="label">The answer</div><div class="right">${a} × ${b} = ${a * b}</div><div class="label">Trick</div>${(h => `<div>${h.rule}</div>${stepsHTML(h.lines)}`)(hintFor(a, b))}</div>` : `<div class="feedback" id="fb">${state === 'ok' ? 'Nice!' : ''}</div>`}
         </div>
         ${G.showHint ? `<button class="btn" data-act="gotit">Got it, next</button>` : `
         <div class="pad">
@@ -455,8 +463,8 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
 
   function tricks() {
     stop(); G = null;
-    app.innerHTML = bar('Tricks', true) + `<p class="note">Stuck on a fact? Use the easiest table in it. 7 × 9 is the same as 9 × 7, so use the 9s trick. 9 × 7 is the same as 70 − 7 = 63.</p>
-      <div class="tricks">${Object.keys(TRICKS).map(n => `<div class="trick"><div class="n">×${n}</div><b>${TRICKS[n][0]}</b><span>${esc(TRICKS[n][1](n == 11 ? 4 : 7))}</span></div>`).join('')}
+    app.innerHTML = bar('Tricks', true) + `<p class="note">Stuck on a fact? Use the easiest table in it. For 7 × 9, flip it to 9 × 7 and use the 9s trick.</p>
+      <div class="tricks">${Object.keys(TRICKS).map(n => `<div class="trick"><div class="n">×${n}</div><b>${TRICKS[n][0]}</b>${stepsHTML(TRICKS[n][1](n == 11 ? 4 : 7))}</div>`).join('')}
       <div class="trick"><div class="n">a×b</div><b>Flip it.</b><span>3 × 8 is the same as 8 × 3. Learn one, get both free.</span></div></div>`;
   }
 
@@ -479,7 +487,7 @@ h1, h2, .display { font-family: var(--display); font-weight: 400; letter-spacing
       app.querySelectorAll('.mgrid .sel').forEach(x => x.classList.remove('sel'));
       cell.classList.add('sel');
       const status = !f.seen ? 'not tried yet' : f.box >= 3 ? 'mastered' : f.box === 0 ? 'tricky' : 'learning';
-      document.getElementById('peek').innerHTML = `<b>${a} × ${b} = ${a * b}</b> · ${status}${f.seen ? ` · ${f.right}/${f.seen} right` : ''}<br>${esc(hintFor(a, b))}`;
+      document.getElementById('peek').innerHTML = `<div><b>${a} × ${b} = ${a * b}</b> · ${status}${f.seen ? ` · ${f.right}/${f.seen} right` : ''}</div>${(h => `<div>${h.rule}</div>${stepsHTML(h.lines)}`)(hintFor(a, b))}`;
       return;
     }
     const act = e.target.closest('[data-act]');
